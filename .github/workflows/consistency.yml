@@ -1,12 +1,15 @@
-name: BenchmarkDotNet - Ubuntu Single Run
+name: BenchmarkDotNet - Ubuntu Consistency Test
 
 on:
   workflow_dispatch:
 
 jobs:
   benchmark:
-    name: Ubuntu Benchmark Run
+    name: Ubuntu Benchmark Run ${{ matrix.run_number }}
     runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        run_number: [1, 2, 3, 4, 5]
 
     steps:
       - name: Checkout code
@@ -26,15 +29,15 @@ jobs:
       - name: Upload Benchmark Artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: Benchmark Reports
+          name: Benchmark Reports Run ${{ matrix.run_number }}
           path: BenchmarkDotNet.Artifacts/results/
 
       - name: Add GitHub Markdown Report to Summary
         run: |
           REPORT_FILE=$(find BenchmarkDotNet.Artifacts/results -name '*-report-github.md' | head -n 1)
           if [ -f "$REPORT_FILE" ]; then
-            echo "### Benchmark Summary" >> $GITHUB_STEP_SUMMARY
+            echo "### Benchmark Summary - Run ${{ matrix.run_number }}" >> $GITHUB_STEP_SUMMARY
             cat "$REPORT_FILE" >> $GITHUB_STEP_SUMMARY
           else
-            echo "No markdown report found." >> $GITHUB_STEP_SUMMARY
+            echo "No markdown report found for Run ${{ matrix.run_number }}" >> $GITHUB_STEP_SUMMARY
           fi
