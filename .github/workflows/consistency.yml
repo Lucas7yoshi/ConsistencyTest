@@ -1,16 +1,12 @@
-name: Run .NET 9 Project on Multiple OS
+name: BenchmarkDotNet - Ubuntu Single Run
 
 on:
   workflow_dispatch:
 
 jobs:
-  # Ubuntu - 3 runs
-  ubuntu-run:
-    name: Ubuntu Run ${{ matrix.run_number }}
+  benchmark:
+    name: Ubuntu Benchmark Run
     runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        run_number: [1, 2, 3]
 
     steps:
       - name: Checkout code
@@ -24,51 +20,21 @@ jobs:
       - name: Restore dependencies
         run: dotnet restore
 
-      - name: Run Project (Ubuntu ${{ matrix.run_number }})
+      - name: Run BenchmarkDotNet
         run: dotnet run --configuration Release --arch x64
 
-  # Windows - 3 runs
-  windows-run:
-    name: Windows Run ${{ matrix.run_number }}
-    runs-on: windows-latest
-    strategy:
-      matrix:
-        run_number: [1, 2, 3]
-
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Setup .NET 9 SDK
-        uses: actions/setup-dotnet@v4
+      - name: Upload Benchmark Artifacts
+        uses: actions/upload-artifact@v4
         with:
-          dotnet-version: '9.0.x'
+          name: Benchmark Reports
+          path: BenchmarkDotNet.Artifacts/results/
 
-      - name: Restore dependencies
-        run: dotnet restore
-
-      - name: Run Project (Windows ${{ matrix.run_number }})
-        run: dotnet run --configuration Release --arch x64
-
-  # macOS - 3 runs
-  macos-run:
-    name: macOS Run ${{ matrix.run_number }}
-    runs-on: macos-latest
-    strategy:
-      matrix:
-        run_number: [1, 2, 3]
-
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Setup .NET 9 SDK
-        uses: actions/setup-dotnet@v4
-        with:
-          dotnet-version: '9.0.x'
-
-      - name: Restore dependencies
-        run: dotnet restore
-
-      - name: Run Project (macOS ${{ matrix.run_number }})
-        run: dotnet run --configuration Release --arch x64
+      - name: Add GitHub Markdown Report to Summary
+        run: |
+          REPORT_FILE=$(find BenchmarkDotNet.Artifacts/results -name '*-report-github.md' | head -n 1)
+          if [ -f "$REPORT_FILE" ]; then
+            echo "### Benchmark Summary" >> $GITHUB_STEP_SUMMARY
+            cat "$REPORT_FILE" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "No markdown report found." >> $GITHUB_STEP_SUMMARY
+          fi
