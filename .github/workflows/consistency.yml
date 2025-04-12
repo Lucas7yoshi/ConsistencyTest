@@ -1,4 +1,4 @@
-name: BenchmarkDotNet - Ubuntu Consistency Test
+name: BenchmarkDotNet Consistency Test & Comparison
 
 on:
   workflow_dispatch:
@@ -32,7 +32,7 @@ jobs:
           name: Benchmark Reports Run ${{ matrix.run_number }}
           path: BenchmarkDotNet.Artifacts/results/
 
-      - name: Add GitHub Markdown Report to Summary
+      - name: Add GitHub Markdown Report to Job Summary
         run: |
           REPORT_FILE=$(find BenchmarkDotNet.Artifacts/results -name '*-report-github.md' | head -n 1)
           if [ -f "$REPORT_FILE" ]; then
@@ -41,3 +41,57 @@ jobs:
           else
             echo "No markdown report found for Run ${{ matrix.run_number }}" >> $GITHUB_STEP_SUMMARY
           fi
+
+  compare:
+    name: Compare Benchmark Results
+    runs-on: ubuntu-latest
+    needs: benchmark
+    steps:
+      - name: Download artifact for run 1
+        uses: actions/download-artifact@v3
+        with:
+          name: Benchmark Reports Run 1
+          path: artifacts/run1
+
+      - name: Download artifact for run 2
+        uses: actions/download-artifact@v3
+        with:
+          name: Benchmark Reports Run 2
+          path: artifacts/run2
+
+      - name: Download artifact for run 3
+        uses: actions/download-artifact@v3
+        with:
+          name: Benchmark Reports Run 3
+          path: artifacts/run3
+
+      - name: Download artifact for run 4
+        uses: actions/download-artifact@v3
+        with:
+          name: Benchmark Reports Run 4
+          path: artifacts/run4
+
+      - name: Download artifact for run 5
+        uses: actions/download-artifact@v3
+        with:
+          name: Benchmark Reports Run 5
+          path: artifacts/run5
+
+      - name: Compare Benchmark Results and Create Summary
+        run: |
+          echo "## Benchmark Comparison Summary" > comparison-summary.md
+          for i in {1..5}; do
+            REPORT=$(find artifacts/run$i -type f -name '*-report-github.md' | head -n 1)
+            if [ -f "$REPORT" ]; then
+              echo "### Run $i" >> comparison-summary.md
+              cat "$REPORT" >> comparison-summary.md
+              echo "" >> comparison-summary.md
+            else
+              echo "### Run $i" >> comparison-summary.md
+              echo "No report found for run $i" >> comparison-summary.md
+            fi
+          done
+          cat comparison-summary.md
+
+      - name: Add Comparison Summary to GitHub Step Summary
+        run: cat comparison-summary.md >> $GITHUB_STEP_SUMMARY
