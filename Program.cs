@@ -8,7 +8,7 @@ namespace MyBenchmarks
 {
     public class Md5VsSha256
     {
-        private const int N = 10000;
+        private const int N = 100_000;
         private readonly byte[] data;
 
         private readonly SHA256 sha256 = SHA256.Create();
